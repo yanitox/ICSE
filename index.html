@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz CBC - Parciales ICSE</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f9;
+            margin: 0;
+            flex-direction: column;
+        }
+
+        #app-container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 700px;
+            min-height: 450px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #17a2b8; /* Azul CBC */
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        /* --- Estilos de la Home (Selección de Parcial) --- */
+        #home-view {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .parcial-btn {
+            background-color: #28a745; /* Verde inicial */
+            color: white;
+            padding: 20px 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: background-color 0.3s;
+        }
+
+        .parcial-btn:hover:not(:disabled) {
+            background-color: #218838;
+        }
+        
+        .parcial-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* --- Estilos del Quiz (Juego) --- */
+        #quiz-view {
+            width: 100%;
+            display: none; /* Inicialmente oculto */
+        }
+
+        #progreso-score {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        #pregunta {
+            font-size: 1.4em;
+            margin-bottom: 25px;
+            color: #333;
+            text-align: center;
+        }
+
+        #opciones-container {
+            display: grid;
+            gap: 10px;
+        }
+
+        .opcion-btn {
+            background-color: #17a2b8; /* Azul UBA */
+            color: white;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+            text-align: left;
+        }
+
+        .opcion-btn:hover:not(:disabled) {
+            background-color: #117a8b;
+        }
+
+        /* Estilos de Feedback */
+        .opcion-btn:disabled {
+            cursor: default;
+        }
+        .opcion-btn.correcta {
+            background-color: #28a745; /* Verde */
+            transform: none;
+        }
+        .opcion-btn.incorrecta {
+            background-color: #dc3545; /* Rojo */
+            transform: none;
+        }
+
+        #feedback-area {
+            margin-top: 20px;
+            text-align: center;
+            min-height: 30px;
+        }
+        
+        #btn-volver-home {
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none; 
+        }
+
+        #resultado-final {
+            text-align: center;
+            padding: 20px;
+            border: 2px solid #17a2b8;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <h1 id="main-title">Preparación CBC - Parciales ICSE (UBA)</h1>
+
+    <div id="home-view">
+        <p style="text-align: center; font-size: 1.1em; color: #555;">Selecciona el Parcial que deseas practicar:</p>
+    </div>
+
+    <div id="quiz-view">
+        <div id="progreso-score">
+            <span id="parcial-title">Parcial X</span>
+            <span id="score-display">Puntaje: 0</span>
+        </div>
+        <p id="pregunta">Cargando pregunta...</p>
+        <div id="opciones-container">
+        </div>
+        <div id="feedback-area"></div>
+        <div id="resultado-final" style="display:none;"></div>
+    </div>
+    
+    <button id="btn-volver-home" onclick="mostrarHome()">Volver a Selección de Parcial</button>
+
+</div>
+
+<script>
+    // --- DATA DEL QUIZ: Preguntas Agrupadas por Parcial ---
+    const preguntasData = [
+        // --- PARCIAL 1 (EJEMPLO) ---
+        {
+            parcial: 1,
+            pregunta: "¿Cuál es el nombre de la materia a la que pertenece este examen?",
+            opciones: ["Semiología", "Introducción al Conocimiento de la Sociedad y el Estado", "Economía", "Matemática"],
+            respuestaCorrecta: "Introducción al Conocimiento de la Sociedad y el Estado"
+        },
+        // --- PARCIAL 2 (ICSE - 2DO PARCIAL TEMA 1) ---
+        // Se mantienen las preguntas que cargaste anteriormente.
+        {
+            parcial: 2,
+            pregunta: "Pregunta 1: En el video de Gemma Galdón-Clavell se explica que la automatización ha hecho que la idea de frontera clásica desaparezca.",
+            opciones: ["A. Es verdadero, porque con la automatización del proceso de control la frontera es ahora mismo un espacio larguísimo y continuo.", "B. Es verdadero, porque con la automatización del proceso de control los tramites ahora son mucho más cortos y precisos.", "C. Es falso, porque la automatización supone el fortalecimiento de la frontera como único control entre países.", "D. Es falso, porque actualmente hay muchas formas legales de cruzar una frontera sin ser detectado."],
+            respuestaCorrecta: "A. Es verdadero, porque con la automatización del proceso de control la frontera es ahora mismo un espacio larguísimo y continuo."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 2: Luis A. Romero afirma que Carlos Menem inició su gobierno en medio de una crisis formidable: la hiperinflación, desatada en abril de 1989 durante el gobierno de Alfonsín, se prolongó hasta agosto; en julio la inflación fue del 200%, y en diciembre todavía se mantenía en el 40%.",
+            opciones: ["A. Es falso, dado que eso ocurrió solamente en el gobierno de Alfonsín. Menem con la ley de la convertibilidad logró eludir la hiperinflación.", "B. Es verdadero, porque con un fisco en bancarrota, la moneda licuada, sueldos inexistentes y violencia social, quedó expuesta la incapacidad del Estado para gobernar.", "C. Es verdadero, porque lo nuevo era la crisis y que se manifestara más con depresión social y apatía que con violencia y espectacularidad.", "D. Es falso, porque los gastos del Estado benefactor aún no eran excesivos y el problema era de carácter político, sobre todo con el tema de los juicios pendientes a los militares de la dictadura."],
+            respuestaCorrecta: "B. Es verdadero, porque con un fisco en bancarrota, la moneda licuada, sueldos inexistentes y violencia social, quedó expuesta la incapacidad del Estado para gobernar."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 3: Según lo expresado por Paula Bertino, las democracias delegativas son una forma de manejar y ejercer el poder político.",
+            opciones: ["A. Es falso, porque los tipos de régimen son el democrático y el no democrático y no hay alternativas que puedan suceder entre ambos.", "B. Es falso, porque las democracias delegativas no tienen legitimidad de su origen, puesto que son gobiernos electos mediante elecciones que no son libres, ni limpias y mucho menos, competitivas.", "C. Es verdadero, porque las decisiones en este tipo de regímenes se toman teniendo en cuenta la diversidad de opiniones en la ciudadanía, y por ello no tienen un alto contenido discrecional.", "D. Es verdadero, porque la democracia delegativa se distingue de otras formas de democracia por la manera en que se toman las decisiones."],
+            respuestaCorrecta: "D. Es verdadero, porque la democracia delegativa se distingue de otras formas de democracia por la manera en que se toman las decisiones."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 4: Según Romero, el nuevo gobierno de Fernando de la Rúa que asumía en 1999, recibía del presidente Menem una economía en expansión; con un déficit fiscal menor gracias a las privatizaciones y el achicamiento del Estado, y con bajo desempleo.",
+            opciones: ["A. Es verdadero, porque al comienzo de la gestión de la Alianza, el enorme ingreso de divisas provenientes de las exportaciones de soja, que ya había comenzado con el gobierno anterior, permitió mejorar los ya excelentes índices macroeconómicos.", "B. Es verdadero, porque ni bien llegó al poder, el nuevo gobierno encabezado por Fernando de la Rúa, gozó de un legado económico inmejorable a lo que debió sumar la apertura de una nueva etapa de crecimiento económico gracias al contexto internacional.", "C. Es falso, porque el nuevo gobierno asumió en un marco de alto desempleo, déficit fiscal, y la actividad económica estancada.", "D. Es falso, porque si bien las cuentas públicas estaban en orden gracias a las políticas de achicamiento del Estado, aun persistía una alta inflación heredada del gobierno menemista."],
+            respuestaCorrecta: "C. Es falso, porque el nuevo gobierno asumió en un marco de alto desempleo, déficit fiscal, y la actividad económica estancada."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 5: Según Sebastián Linares, las justificaciones del sorteo para designar cargos públicos aplican para cualquier contexto. Por ejemplo, solo con el argumento de la igualdad política alcanza para justificar el carácter democrático de cualquier sistema de selección aleatoria.",
+            opciones: ["A. Es verdadero, porque un dictador escogido por sorteo sería democrático, siempre que se honre la igualdad de trato en la selección.", "B. Es falso, porque el efecto sanitizante del sorteo para designar cargos públicos nunca depende del contexto.", "C. Es falso, porque tener una misma probabilidad de acceder a un cargo público no es, sin más, democrático, si solo unas pocas personas alcanzan esas funciones a lo largo de una generación.", "D. Es verdadero, porque tener una misma probabilidad de acceder a un cargo público es, sin más, mucho más democrático que cualquier otro sistema de elección de representantes."],
+            respuestaCorrecta: "C. Es falso, porque tener una misma probabilidad de acceder a un cargo público no es, sin más, democrático, si solo unas pocas personas alcanzan esas funciones a lo largo de una generación."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 6: En el video de la entrevista a Miguel Ángel Quintana Paz se afirma que la cultura woke busca preservar y fortalecer la tradición judeocristiana y grecorromana.",
+            opciones: ["A. Es verdadero, porque se explica que la cultura woke surge como una defensa frente a la pérdida de valores tradicionales.", "B. Es verdadero, porque la cultura woke y la tradición occidental comparten las mismas raíces éticas y religiosas.", "C. Es falso, porque se indica que la cultura woke pretende sustituir esa tradición, deformando valores como el perdón o el valor de la víctima.", "D. Es falso, porque el video sostiene que ambas culturas se complementan armónicamente sin tensiones ni rupturas."],
+            respuestaCorrecta: "C. Es falso, porque se indica que la cultura woke pretende sustituir esa tradición, deformando valores como el perdón o el valor de la víctima."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 7: Según el texto de Paola Bautista de Alemán, en los autoritarismos con capacidad estatal, la prioridad es mantenerse en el poder, incluso durante una crisis como la pandemia. Por eso:",
+            opciones: ["A. La respuesta inicial a la pandemia en China fue priorizar la atención médica sobre el control social.", "B. China utilizó primero su aparato coercitivo y luego el administrativo ante el covid-19.", "C. La propaganda estatal fue utilizada en China para proyectar una imagen de éxito en la gestión de la pandemia.", "D. Las respuestas autoritarias son más efectivas porque garantizan datos confiables.", "E. Las opciones correctas son la B y la C.", "F. Las opciones correctas son la A y la D.", "G. Las opciones correctas son la B y la D.", "H. Las opciones correctas son la A y la B."],
+            respuestaCorrecta: "E. Las opciones correctas son la B y la C."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 8: Según el texto de Edgar Straehle, la sucesión de movilizaciones populares a nivel mundial habría:",
+            opciones: ["A. Confirmado que internet es un fenómeno fácil de controlar por los Estados autoritarios.", "B. Provocado un renovado optimismo sobre la capacidad de transformación social de internet.", "C. Demostrado el miedo de los gobiernos a internet, con medidas como bloquear servidores o restringir el acceso.", "D. Demostrado que las movilizaciones se dieron solo en países dictatoriales.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la A y la D.", "H. Las opciones correctas son la A, la B y la D."],
+            respuestaCorrecta: "F. Las opciones correctas son la B y la C."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 9: En el video en que Eduardo Levy Yeyati entrevista a Pablo Gerchunoff se hace referencia a que Raúl Alfonsín, ya no como presidente sino como líder de su partido, inicialmente se disciplinó ante la decisión de la coalición que integraba (la Alianza) de mantener la convertibilidad. Sin embargo, con el tiempo el expresidente buscó imponer su voluntad política por sobre la del presidente De la Rúa. Esto se vio en que:",
+            opciones: ["A. Alfonsín aceptaba mantener la convertibilidad ya que aspiraba a ser candidato a presidente de la Alianza opositora a Menem.", "B. Alfonsín se oponía sistemáticamente a la política económica de Menem, o sea, a la convertibilidad, desde sus mismos inicios.", "C. Alfonsín finalmente apoyó con decisión a De la Rúa durante la crisis el año 2001 en su política de mantener la convertibilidad.", "D. Alfonsín creía inevitable el fin de la convertibilidad y eso lo fue acercando a las ideas de Duhalde.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la D.", "G. Las opciones correctas son la C y la D.", "H. Las opciones correctas son la A, la C y la D."],
+            respuestaCorrecta: "F. Las opciones correctas son la B y la D."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 10: Según Luis A. Romero el entonces presidente Carlos Menem realizó un giro ideológico importante al iniciar su presidencia, lo que quedó evidenciado en los siguientes hechos:",
+            opciones: ["A. Se alineó con la tradición peronista ortodoxa para fortalecer el consenso social en torno a las reformas económicas que pensaba implementar.", "B. Asumió un discurso neoliberal que rechazaba del estatismo y promovía la apertura económica.", "C. Designó como ministro de Economía a un alto directivo del grupo económico trasnacional Bunge y Born ajeno totalmente a la tradición peronista.", "D. Adoptó medidas populistas para evitar un enfrentamiento con el establishment económico.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la C y la D.", "H. Las opciones correctas son la A, la B y la D."],
+            respuestaCorrecta: "F. Las opciones correctas son la B y la C."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 11: Según Diego Bernardini, el proceso de envejecimiento demográfico en América Latina representa un desafío porque:",
+            opciones: ["A. América Latina produce envejecimiento demográfico en la mitad del tiempo que tardó Europa en recorrer el mismo camino.", "B. En cerca de 35 años, las personas mayores de 60 años representarán aproximadamente el 25% de la población latinoamericana.", "C. La tasa de mortalidad se ha mantenido estable y no influye en el proceso de envejecimiento poblacional.", "D. La cantidad de personas jóvenes triplicará a la de mayores de 50 años en las próximas décadas.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la A y la D.", "H. Las opciones correctas son la C y la D."],
+            respuestaCorrecta: "E. Las opciones correctas son la A y la B."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 12: El gobierno de Menem adoptó medidas para reforzar el ajuste estructural sin descuidar algunas alianzas clave. Estas medidas incluyeron:",
+            opciones: ["A. Cesión de servicios sociales a provincias sin financiamiento adicional.", "B. Participación sindical en empresas privatizadas para lograr respaldo gremial.", "C. Eliminación del sistema previsional estatal en favor del privado sin excepción.", "D. Fondo de Reparación Histórica del Conurbano para Buenos Aires.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la C y la D.", "H. Las opciones correctas son la A, la B y la D."],
+            respuestaCorrecta: "H. Las opciones correctas son la A, la B y la D."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 13: Según Tomás Straka, el chavismo en Venezuela durante los primeros años del siglo XXI se caracterizó por:",
+            opciones: ["A. Apostar por un modelo de socialismo real moderado, similar al húngaro o yugoslavo, donde el mercado y la propiedad privada ocupaban un lugar secundario.", "B. Generar una ilusión de prosperidad impulsada por el boom agrícola que permitió estatizar grandes empresas y medios de comunicación.", "C. Sustituir el neoliberalismo por un fuerte intervencionismo estatal para mantener vivas las ilusiones del 'Estado mágico'.", "D. Implementar una socialdemocracia reformista similar a la de los gobiernos de Lula Da Silva en Brasil y Pepe Mujica en Uruguay.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la C y la D.", "G. Las opciones correctas son la A y la C.", "H. Las opciones correctas son la B, la C y la D."],
+            respuestaCorrecta: "G. Las opciones correctas son la A y la C."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 14: Paula Bertino afirma que en una democracia delegativa no hay incorporación política de los sectores populares, excepto en lo discursivo. Esto es así porque:",
+            opciones: ["A. La democracia delegativa es un régimen político totalitario (porque la capacidad de decidir del líder es total).", "B. Los canales de diálogo entre el gobierno y la ciudadanía se abren solo durante las elecciones, para luego cerrarse hasta la siguiente votación.", "C. Los votantes se expresan a través de las redes sociales cuya característica principal es el uso democrático del discurso y la palabra.", "D. Los votantes esperan una salvación de la crisis de la mano de un líder que se considera único e irrepetible.", "E. Las opciones correctas son la A y la C.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la B y la D.", "H. Las opciones correctas son la B, la C y la D."],
+            respuestaCorrecta: "G. Las opciones correctas son la B y la D."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 15: Sobre el desarrollo político que llevó a la crisis del gobierno de la Alianza, Romero afirma que:",
+            opciones: ["A. La Alianza, aunque poco exitosa electoralmente, logró consolidarse como una coalición de gobierno estable.", "B. Por razones profundas o mezquinas, la UCR tuvo fricciones cada vez más fuertes con el grupo que rodeaba a De la Rúa.", "C. El 'escándalo del Senado' fortaleció la unidad del oficialismo frente a las críticas de la oposición.", "D. La designación de Cavallo –ex ministro de economía de Menem- en el gabinete distanció a Alfonsín y debilitó aún más al gobierno.", "E. Las opciones A y B son correctas.", "F. Las opciones B y D son correctas.", "G. Las opciones A y C son correctas.", "H. Las opciones C y D son correctas."],
+            respuestaCorrecta: "F. Las opciones B y D son correctas."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 16: Según Julio Montero la doctrina internacional de derechos humanos se sostiene en principios clave, entre ellos:",
+            opciones: ["A. Que los derechos humanos son responsabilidad exclusiva de cada Estado.", "B. Que todos los derechos humanos deben realizarse simultáneamente, salvo los de bienestar.", "C. Que la comunidad internacional debe actuar frente a violaciones graves.", "D. Que los Estados pueden priorizar derechos políticos sobre derechos sociales.", "E. Las opciones correctas son la B y la C.", "F. Las opciones correctas son la A y la D.", "G. Las opciones correctas son la C y la D.", "H. Las opciones correctas son la A, la B y la C."],
+            respuestaCorrecta: "E. Las opciones correctas son la B y la C."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 17 (1 punto): Según Claudio Iglesias, la persistencia de ciertos problemas económicos en Argentina desde el regreso de la democracia en 1983 se explica, entre otros motivos, por:",
+            opciones: ["A. La existencia de un sindicalismo de inspiración estatal, controlado monopólicamente por una fuerza política y poco propenso al pluralismo de orientaciones.", "B. La presencia de gobiernos provinciales donde la democracia liberal y la división de poderes existen de forma débil y solo como aspiración teórica.", "C. El fortalecimiento continuo del reclutamiento profesional en la administración pública, lo cual favoreció una mejora en la eficiencia estatal pero muy ligada al modelo neoliberal.", "D. El reemplazo generalizado de la burocracia pública por personal reclutado profesionalmente, lo que contribuyó a la disminución de la politización administrativa, aunque le dio un mayor perfil clasista.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la A y la C.", "H. Las opciones correctas son la C y la D."],
+            respuestaCorrecta: "E. Las opciones correctas son la A y la B."
+        },
+        {
+            parcial: 2,
+            pregunta: "Pregunta 18 (1 punto): En el video sobre la política del futuro, Julia Pomares afirma que hay algunas certezas sobre cómo va a ser ese futuro, por ejemplo:",
+            opciones: ["A. Seguramente habrá algún tipo de holocausto nuclear.", "B. El socialismo será el sistema político dominante.", "C. La inteligencia artificial aplicada a los procesos de todo tipo --de producción, de servicios-- va a haber transformado a las economías desarrolladas.", "D. El centro del poder económico mundial va a estar en un mercado común entre Estados Unidos y Europa.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la C y la D.", "H. Las opciones correctas son la A, la B y la D."],
+            respuestaCorrecta: "C. La inteligencia artificial aplicada a los procesos de todo tipo --de producción, de servicios-- va a haber transformado a las economías desarrolladas."
+        },
+        
+        // --- PARCIAL 3 (ICSE - 2DO PARCIAL TEMA 2) ---
+        // INICIA EL NUEVO SET DE PREGUNTAS
+        {
+            parcial: 3,
+            pregunta: "Pregunta 1: En el video de la entrevista a Miguel Ángel Quintana Paz se afirma que la cultura woke busca preservar y fortalecer la tradición judeocristiana y grecorromana.",
+            opciones: ["A. Es falso, porque se indica que la cultura woke pretende sustituir esa tradición, deformando valores como el perdón o el valor de la víctima.", "B. Es falso, porque el video sostiene que ambas culturas se complementan armónicamente sin tensiones ni rupturas.", "C. Es verdadero, porque se explica que la cultura woke surge como una defensa frente a la pérdida de valores tradicionales.", "D. Es verdadero, porque la cultura woke y la tradición occidental comparten las mismas raíces éticas y religiosas."],
+            respuestaCorrecta: "A. Es falso, porque se indica que la cultura woke pretende sustituir esa tradición, deformando valores como el perdón o el valor de la víctima."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 2: En el video de Gemma Galdón-Clavell se explica que la automatización ha hecho que la idea de frontera clásica desaparezca.",
+            opciones: ["A. Es verdadero, porque con la automatización del proceso de control los tramites ahora son mucho más cortos y precisos.", "B. Es falso, porque la automatización supone el fortalecimiento de la frontera como único controlentre los países.", "C. Es verdadero, porque con la automatización del proceso de control la frontera es ahora mismo un espacio larguísimo y continuo.", "D. Es falso, porque actualmente hay muchas formas legales de cruzar una frontera sin ser detectado."],
+            respuestaCorrecta: "C. Es verdadero, porque con la automatización del proceso de control la frontera es ahora mismo un espacio larguísimo y continuo."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 3: Según Sebastián Linares, las justificaciones del sorteo para designar cargos públicos aplican para cualquier contexto. Por ejemplo, solo con el argumento de la igualdad política alcanza para justificar el carácter democrático de cualquier sistema de selección aleatoria.",
+            opciones: ["A. Es verdadero, porque un dictador escogido por sorteo sería democrático, siempre que se honre la igualdad de trato en la selección.", "B. Es falso, porque el efecto sanitizante del sorteo para designar cargos públicos nunca depende del contexto.", "C. Es verdadero, porque tener una misma probabilidad de acceder a un cargo público es, sin más, mucho más democrático que cualquier otro sistema de elección de representantes.", "D. Es falso, porque tener una misma probabilidad de acceder a un cargo público no es, sin más, democrático, si solo unas pocas personas alcanzan esas funciones a lo largo de una generación."],
+            respuestaCorrecta: "D. Es falso, porque tener una misma probabilidad de acceder a un cargo público no es, sin más, democrático, si solo unas pocas personas alcanzan esas funciones a lo largo de una generación."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 4: Luis A. Romero afirma que Carlos Menem inició su gobierno en medio de una crisis formidable: la hiperinflación, desatada en abril de 1989 durante el gobierno de Alfonsín, se prolongó hasta agosto; en julio la inflación fue del 200%, y en diciembre todavía se mantenía en el 40%.",
+            opciones: ["A. Es verdadero, porque con un fisco en bancarrota, la moneda licuada, sueldos inexistentes y violencia social, quedó expuesta la incapacidad del Estado para gobernar.", "B. Es falso, porque los gastos del Estado benefactor aún no eran excesivos y el problema era de carácter político, sobre todo con el tema de los juicios pendientes a los militares de la dictadura.", "C. Es falso, dado que eso ocurrió solamente en el gobierno de Alfonsín. Menem con la ley de la convertibilidad logró eludir la hiperinflación.", "D. Es verdadero, porque lo nuevo era la crisis y que se manifestara más con depresión social y apatía que con violencia y espectacularidad."],
+            respuestaCorrecta: "A. Es verdadero, porque con un fisco en bancarrota, la moneda licuada, sueldos inexistentes y violencia social, quedó expuesta la incapacidad del Estado para gobernar."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 5: Según Romero, el nuevo gobierno de Fernando de la Rúa que asumía en 1999, recibía del presidente Menem una economía en expansión; con un déficit fiscal menor gracias a las privatizaciones y el achicamiento del Estado, y con bajo desempleo.",
+            opciones: ["A. Es falso, porque si bien las cuentas públicas estaban en orden gracias a las políticas de achicamiento del Estado, aun persistía una alta inflación heredada del gobierno menemista.", "B. Es falso, porque el nuevo gobierno asumió en un marco de alto desempleo, déficit fiscal, y la actividad económica estancada.", "C. Es verdadero, porque ni bien llegó al poder, el nuevo gobierno encabezado por Fernando de la Rúa, gozó de un legado económico inmejorable a lo que debió sumar la apertura de una nueva etapa de crecimiento económico gracias al contexto internacional.", "D. Es verdadero, porque al comienzo de la gestión de la Alianza, el enorme ingreso de divisas provenientes de las exportaciones de soja, que ya había comenzado con el gobierno anterior, permitió mejorar los ya excelentes índices macroeconómicos."],
+            respuestaCorrecta: "B. Es falso, porque el nuevo gobierno asumió en un marco de alto desempleo, déficit fiscal, y la actividad económica estancada."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 6: Según lo expresado por Paula Bertino, las democracias delegativas son una forma de manejar y ejercer el poder político.",
+            opciones: ["A. Es falso, porque los tipos de régimen son el democrático y el no democrático y no hay alternativas que puedan suceder entre ambos.", "B. Es verdadero, porque la democracia delegativa se distingue de otras formas de democracia por la manera en que se toman las decisiones.", "C. Es falso, porque las democracias delegativas no tienen legitimidad de su origen, puesto que son gobiernos electos mediante elecciones que no son libres, ni limpias y mucho menos, competitivas.", "D. Es verdadero, porque las decisiones en este tipo de regímenes se toman teniendo en cuenta la diversidad de opiniones en la ciudadanía, y por ello no tienen un alto contenido discrecional."],
+            respuestaCorrecta: "B. Es verdadero, porque la democracia delegativa se distingue de otras formas de democracia por la manera en que se toman las decisiones."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 7: Según Diego Bernardini, el proceso de envejecimiento demográfico en América Latina representa un desafío porque:",
+            opciones: ["A. América Latina produce envejecimiento demográfico en la mitad del tiempo que tardó Europa en recorrer el mismo camino.", "B. La cantidad de personas jóvenes duplicará a la de mayores de 50 años en las próximas décadas.", "C. La tasa de mortalidad se ha mantenido estable y no influye en el proceso de envejecimiento poblacional.", "D. En cerca de 35 años, las personas mayores de 60 años representarán aproximadamente el 25% de la población latinoamericana.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la A y la D.", "H. Las opciones correctas son la C y la D."],
+            respuestaCorrecta: "G. Las opciones correctas son la A y la D."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 8: Paula Bertino afirma que en una democracia delegativa no hay incorporación política de los sectores populares, excepto en lo discursivo. Esto es así porque:",
+            opciones: ["A. La democracia delegativa es un régimen político totalitario (porque la capacidad de decidir del líder es total).", "B. Los votantes se expresan a través de las redes sociales cuya característica principal es el uso democrático del discurso y la palabra.", "C. Los votantes esperan una salvación de la crisis de la mano de un líder que se considera único e irrepetible.", "D. Los canales de diálogo entre el gobierno y la ciudadanía se abren solo durante las elecciones, para luego cerrarse hasta la siguiente votación.", "E. Las opciones correctas son la A y la C.", "F. Las opciones correctas son la B y la A.", "G. Las opciones correctas son la B y la C.", "H. Las opciones correctas son la C y la D."],
+            respuestaCorrecta: "H. Las opciones correctas son la C y la D." // Corregido el orden de las opciones para que coincida con la respuesta C y D (en la pregunta 14 del T1 era B y D)
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 9: Según Julio Montero la doctrina internacional de derechos humanos se sostiene en principios clave, entre ellos:",
+            opciones: ["A. Que todos los derechos humanos deben realizarse simultáneamente, salvo los de bienestar.", "B. Que los derechos humanos son responsabilidad exclusiva de cada Estado.", "C. Que los Estados pueden priorizar derechos políticos sobre derechos sociales.", "D. Que la comunidad internacional debe actuar frente a violaciones graves.", "E. Las opciones correctas son la B y la C.", "F. Las opciones correctas son la A y la D.", "G. Las opciones correctas son la C y la D.", "H. Las opciones correctas son la A, la B y la C."],
+            respuestaCorrecta: "F. Las opciones correctas son la A y la D." // La respuesta F combina A y D
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 10: Según Tomás Straka, el chavismo en Venezuela durante los primeros años del siglo XXI se caracterizó por:",
+            opciones: ["A. Sustituir el modelo neoliberal por un fuerte intervencionismo estatal para mantener vivas las ilusiones del “Estado mágico”.", "B. Apostar por un modelo de socialismo real moderado, similar al húngaro o yugoslavo, donde el mercado y la propiedad privada ocupaban un lugar secundario.", "C. Generar una ilusión de prosperidad impulsada por el boom agrícola que permitió estatizar grandes empresas y medios de comunicación.", "D. Implementar una socialdemocracia reformista similar a la de los gobiernos de Lula Da Silva en Brasil y Pepe Mujica en Uruguay.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la C y la D.", "G. Las opciones correctas son la A y la C.", "H. Las opciones correctas son la B, la C y la D."],
+            respuestaCorrecta: "E. Las opciones correctas son la A y la B."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 11: El gobierno de Menem adoptó medidas para reforzar el ajuste estructural sin descuidar algunas alianzas clave. Estas medidas incluyeron:",
+            opciones: ["A. Nacionalización de servicios sociales a quitándoselos a las provincias.", "B. Participación sindical en empresas privatizadas para lograr respaldo gremial.", "C. Eliminación del sistema previsional estatal en favor del privado sin excepción.", "D. Fondo de Reparación Histórica del Conurbano para Buenos Aires.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la D.", "G. Las opciones correctas son la C y la D.", "H. Las opciones correctas son la A, la B y la D."],
+            respuestaCorrecta: "F. Las opciones correctas son la B y la D."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 12: Según el texto de Paola Bautista de Alemán, en los autoritarismos con capacidad estatal, la prioridad es mantenerse en el poder, incluso durante una crisis como la pandemia. Por eso:",
+            opciones: ["A. La respuesta inicial a la pandemia en China fue priorizar la atención médica sobre el control social.", "B. China utilizó primero su aparato coercitivo y luego el administrativo ante el covid-19.", "C. La propaganda estatal fue utilizada en China para proyectar una imagen de éxito en la gestión de la pandemia.", "D. Las respuestas autoritarias son más efectivas porque garantizan datos confiables.", "E. Las opciones correctas son la B y la C.", "F. Las opciones correctas son la A y la D.", "G. Las opciones correctas son la B y la D.", "H. Las opciones correctas son la A y la B."],
+            respuestaCorrecta: "E. Las opciones correctas son la B y la C."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 13: Según explica Romero, sobre el desarrollo político que llevó a la crisis del gobierno de la Alianza, se puede afirmar que:",
+            opciones: ["A. La designación de Cavallo –ex ministro de economía de Menem- en el gabinete distanció a Alfonsín y debilitó aún más al gobierno.", "B. El 'escándalo del Senado' fortaleció la unidad del oficialismo frente a las críticas.", "C. Por razones profundas o mezquinas, la UCR tuvo fricciones cada vez más fuertes con el grupo que rodeaba a De la Rúa.", "D. La Alianza, aunque poco exitosa electoralmente, logró consolidarse como una coalición de gobierno estable.", "E. Las opciones A y B son correctas.", "F. Las opciones B y D son correctas.", "G. Las opciones A y C son correctas.", "H. Las opciones C y D son correctas."],
+            respuestaCorrecta: "G. Las opciones A y C son correctas."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 14: Según Luis A. Romero el entonces presidente Carlos Menem realizó un giro ideológico importante al iniciar su presidencia, lo que quedó evidenciado en los siguientes hechos:",
+            opciones: ["A. Se alineó con la tradición peronista ortodoxa para fortalecer el consenso social en torno a las reformas económicas que pensaba implementar.", "B. Asumió un discurso neoliberal que rechazaba del estatismo y promovía la apertura económica.", "C. Nombró como ministro de Economía a un alto directivo del grupo económico trasnacional Bunge y Born ajeno totalmente a la tradición peronista.", "D. Adoptó medidas populistas para evitar un enfrentamiento con el establishment económico.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la C y la D.", "H. Las opciones correctas son la A, la B y la D."],
+            respuestaCorrecta: "F. Las opciones correctas son la B y la C."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 15: Según el texto de Edgar Straehle, la sucesión de movilizaciones populares a nivel mundial habría:",
+            opciones: ["A. Demostrado el miedo de los gobiernos a internet, con medidas como bloquear servidores o restringir el acceso.", "B. Provocado un renovado optimismo sobre la capacidad de transformación social de internet.", "C. Confirmado que internet es un fenómeno fácil de controlar por los Estados autoritarios.", "D. Demostrado que las movilizaciones se dieron solo en países dictatoriales.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la A y la D.", "H. Las opciones correctas son la A, la B y la D."],
+            respuestaCorrecta: "E. Las opciones correctas son la A y la B."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 16: En el video en que Eduardo Levy Yeyati entrevista a Pablo Gerchunoff se hace referencia a que Raúl Alfonsín, ya no como presidente sino como líder de su partido, inicialmente se disciplinó ante la decisión de la coalición que integraba (la Alianza) de mantener la convertibilidad. Sin embargo, con el tiempo el expresidente buscó imponer su voluntad política por sobre la del presidente De la Rúa. Esto se vio en que:",
+            opciones: ["A. Alfonsín aceptaba mantener la convertibilidad ya que aspiraba a ser candidato a presidente de la Alianza opositora a Menem.", "B. Alfonsín finalmente apoyó con decisión a De la Rúa durante la crisis el año 2001 en su política de mantener la convertibilidad.", "C. Alfonsín se oponía sistemáticamente a la política económica de Menem, o sea, a la convertibilidad, desde sus mismos inicios.", "D. Alfonsín creía inevitable el fin de la convertibilidad y eso lo fue acercando a las ideas de Duhalde.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la D.", "G. Las opciones correctas son la C y la D.", "H. Las opciones correctas son la A, la C y la D."],
+            respuestaCorrecta: "G. Las opciones correctas son la C y la D."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 17 (1 punto): En el video sobre la política del futuro, Julia Pomares afirma que hay algunas certezas sobre cómo va a ser ese futuro, por ejemplo:",
+            opciones: ["A. Seguramente habrá algún tipo de holocausto nuclear.", "B. El neoliberalsimo será el sistema político dominante.", "C. La inteligencia artificial aplicada a los procesos de todo tipo --de producción, de servicios-- va a haber transformado a las economías desarrolladas.", "D. El centro del poder económico mundial va a estar en un mercado común entre Estados Unidos y Europa.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la C y la D.", "H. Las opciones correctas son la A, la B y la D."],
+            respuestaCorrecta: "C. La inteligencia artificial aplicada a los procesos de todo tipo --de producción, de servicios-- va a haber transformado a las economías desarrolladas."
+        },
+        {
+            parcial: 3,
+            pregunta: "Pregunta 18 (1 punto): Según Claudio Iglesias, la persistencia de ciertos problemas económicos en Argentina desde el regreso de la democracia en 1983 se explica, entre otros motivos, por:",
+            opciones: ["A. La existencia de un sindicalismo de inspiración estatal, controlado monopólicamente por una fuerza política y poco propenso al pluralismo de orientaciones.", "B. La presencia de gobiernos provinciales donde la democracia liberal y la división de poderes existen de forma débil y solo como aspiración teórica.", "C. El fortalecimiento continuo del reclutamiento profesional en la administración pública, lo cual favoreció una mejora en la eficiencia estatal pero muy ligada al modelo neoliberal.", "D. El reemplazo generalizado de la burocracia pública por personal reclutado profesionalmente, lo que contribuyó a la disminución de la politización administrativa, aunque le dio un perfil clasista.", "E. Las opciones correctas son la A y la B.", "F. Las opciones correctas son la B y la C.", "G. Las opciones correctas son la A y la C.", "H. Las opciones correctas son la C y la D."],
+            respuestaCorrecta: "E. Las opciones correctas son la A y la B."
+        }
+        // Puedes seguir añadiendo más parciales (4, 5, etc.) aquí.
+    ];
+
+    // --- VARIABLES DE ESTADO ---
+    let preguntasDelParcial = [];
+    let indicePreguntaActual = 0;
+    let quizActivo = false;
+    let puntaje = 0;
+
+    // --- ELEMENTOS DEL DOM ---
+    const homeView = document.getElementById('home-view');
+    const quizView = document.getElementById('quiz-view');
+    const parcialTitle = document.getElementById('parcial-title');
+    const scoreDisplay = document.getElementById('score-display');
+    const preguntaElement = document.getElementById('pregunta');
+    const opcionesContainer = document.getElementById('opciones-container');
+    const feedbackElement = document.getElementById('feedback-area');
+    const btnVolverHome = document.getElementById('btn-volver-home');
+    const resultadoFinalDiv = document.getElementById('resultado-final');
+
+    // --- FUNCIONES DE NAVEGACIÓN ---
+
+    function mostrarHome() {
+        homeView.style.display = 'grid';
+        quizView.style.display = 'none';
+        btnVolverHome.style.display = 'none';
+        resultadoFinalDiv.style.display = 'none';
+        document.getElementById('main-title').textContent = 'Preparación CBC - Parciales ICSE (UBA)';
+        // Resetear variables al volver a Home
+        preguntasDelParcial = [];
+        indicePreguntaActual = 0;
+        puntaje = 0;
+        quizActivo = false;
+    }
+
+    function iniciarQuiz(numeroParcial) {
+        // 1. Filtrar las preguntas para el parcial seleccionado
+        preguntasDelParcial = preguntasData
+            .filter(p => p.parcial === numeroParcial)
+            .sort(() => Math.random() - 0.5); // Mezclar preguntas
+
+        if (preguntasDelParcial.length === 0) {
+            alert(`Aún no hay preguntas cargadas para el Parcial ${numeroParcial}. Intenta con otro.`);
+            return;
+        }
+
+        // 2. Ocultar Home y mostrar Quiz
+        homeView.style.display = 'none';
+        quizView.style.display = 'block';
+        btnVolverHome.style.display = 'block';
+        document.getElementById('main-title').textContent = `ICSE - Parcial ${numeroParcial}`;
+        resultadoFinalDiv.style.display = 'none';
+
+        // 3. Reiniciar y empezar el juego
+        indicePreguntaActual = 0;
+        puntaje = 0;
+        quizActivo = true;
+        cargarPregunta();
+    }
+
+    // --- FUNCIONES DEL JUEGO ---
+
+    function cargarPregunta() {
+        if (!quizActivo) return;
+
+        // Limpiar el estado anterior
+        opcionesContainer.innerHTML = '';
+        feedbackElement.textContent = '';
+        
+        const totalPreguntas = preguntasDelParcial.length;
+        
+        parcialTitle.textContent = `Pregunta ${indicePreguntaActual + 1} de ${totalPreguntas}`;
+        scoreDisplay.textContent = `Puntaje: ${puntaje}`;
+
+        const data = preguntasDelParcial[indicePreguntaActual];
+        preguntaElement.textContent = data.pregunta;
+
+        // Crear botones de opciones
+        data.opciones.forEach(opcion => {
+            const boton = document.createElement('button');
+            boton.textContent = opcion;
+            boton.classList.add('opcion-btn');
+            boton.onclick = () => manejarRespuesta(opcion, data.respuestaCorrecta, boton);
+            opcionesContainer.appendChild(boton);
+        });
+    }
+
+    function manejarRespuesta(opcionElegida, respuestaCorrecta, botonClickeado) {
+        if (!quizActivo) return;
+
+        // Desactivamos todos los botones
+        document.querySelectorAll('.opcion-btn').forEach(btn => {
+            btn.disabled = true;
+        });
+
+        // LÓGICA de chequeo y feedback visual
+        if (opcionElegida === respuestaCorrecta) {
+            // RESPUESTA CORRECTA: Marcar en verde y sumar puntaje
+            botonClickeado.classList.add('correcta');
+            feedbackElement.textContent = "¡Correcto! ✅";
+            puntaje++; 
+            scoreDisplay.textContent = `Puntaje: ${puntaje}`;
+        } else {
+            // RESPUESTA INCORRECTA: Marcar la elegida en rojo
+            botonClickeado.classList.add('incorrecta');
+            feedbackElement.textContent = `¡Incorrecto! ❌ La respuesta correcta era: "${respuestaCorrecta}".`;
+
+            // Marcar la respuesta correcta en verde para mostrarla
+            document.querySelectorAll('.opcion-btn').forEach(btn => {
+                if (btn.textContent === respuestaCorrecta) {
+                    btn.classList.add('correcta'); 
+                }
+            });
+        }
+        
+        // Pasamos a la siguiente pregunta después de 3 segundos
+        setTimeout(pasarSiguientePregunta, 3000);
+    }
+
+    function pasarSiguientePregunta() {
+        indicePreguntaActual++;
+
+        if (indicePreguntaActual < preguntasDelParcial.length) {
+            // Hay más preguntas, cargamos la siguiente
+            cargarPregunta();
+        } else {
+            // Fin del Quiz
+            finalizarQuiz();
+        }
+    }
+    
+    function finalizarQuiz() {
+        quizActivo = false;
+        opcionesContainer.innerHTML = ''; 
+        preguntaElement.textContent = "¡Quiz Terminado! 🎉";
+        feedbackElement.textContent = "";
+
+        resultadoFinalDiv.innerHTML = `
+            <h2>Resultado Final</h2>
+            <p>Completaste ${preguntasDelParcial.length} preguntas.</p>
+            <p style="font-size: 1.5em; color: #28a745;">Respuestas Correctas: <strong>${puntaje}</strong></p>
+            <p style="font-size: 1.2em; color: #dc3545;">Respuestas Incorrectas: ${preguntasDelParcial.length - puntaje}</p>
+        `;
+        resultadoFinalDiv.style.display = 'block';
+        parcialTitle.textContent = "Fin del Examen";
+        scoreDisplay.textContent = `Puntaje Final: ${puntaje}`;
+    }
+
+    // --- INICIALIZACIÓN: Crear botones de parciales al cargar la página ---
+    function inicializarHome() {
+        // Obtenemos los números de parciales únicos que tienen preguntas
+        const parcialesDisponibles = new Set(preguntasData.map(p => p.parcial));
+        
+        for (let i = 1; i <= 9; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = `Parcial ${i}`;
+            btn.classList.add('parcial-btn');
+            
+            if (parcialesDisponibles.has(i)) {
+                // Si el parcial tiene preguntas, es un botón funcional
+                btn.onclick = () => iniciarQuiz(i);
+                if(i === 2 || i === 3) {
+                    btn.textContent += ' (ICSE 2° Parcial)';
+                } else if (i === 1) {
+                    btn.textContent += ' (Ejemplo)';
+                }
+            } else {
+                // Si no tiene preguntas, lo dejamos inactivo
+                btn.disabled = true;
+                btn.textContent += ' (Pronto)';
+            }
+            homeView.appendChild(btn);
+        }
+        mostrarHome();
+    }
+
+    // Ejecutar la inicialización
+    inicializarHome();
+
+</script>
+</body>
+</html>
